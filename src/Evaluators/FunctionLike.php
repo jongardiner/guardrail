@@ -65,9 +65,16 @@ class FunctionLike implements OnEnterEvaluatorInterface, OnExitEvaluatorInterfac
 		}
 		if ($func instanceof Node\Expr\ArrowFunction) {
 			// Scan the arrow function for all variables and auto import them into the scope.
+			// Skip parameters — their types come from the explicit declarations above.
+			$paramNames = [];
+			foreach ($func->getParams() as $param) {
+				if ($param->var instanceof Node\Expr\Variable && is_string($param->var->name)) {
+					$paramNames[$param->var->name] = true;
+				}
+			}
 			$variables = self::getAllReferencedVariables([$func->expr]);
 			foreach ($variables as $varName) {
-				if ($scopeStack->getVarExists($varName)) {
+				if (!isset($paramNames[$varName]) && $scopeStack->getVarExists($varName)) {
 					/** @var Scope\ScopeVar $ob */
 					$ob = $scopeStack->getVarObject($varName);
 					$scope->setVarType($varName, $ob->type, $ob->modifiedLine);
